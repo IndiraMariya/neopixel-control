@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Chandelier Control</title>
+<style>
+  :root {
+    --bg: #000000;
+    --panel: #0e0e10;
+    --panel-2: #141416;
+    --line: rgba(255,255,255,0.08);
+    --line-2: rgba(255,255,255,0.14);
+    --text: #f2f0ea;
+    --text-dim: #8f8c85;
+    --text-mute: #5c5a55;
+    --accent: #ff9d4d;
+    --accent-ink: #ffcf9e;
+    --ok: #5fd88f;
+    --off: #d9584a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: "SF Pro Text", -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: max(18px, env(safe-area-inset-top)) 16px calc(64px + env(safe-area-inset-bottom)); }
+  .wrap { max-width: 440px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+  /* ---------- Header ---------- */
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .brand .eyebrow {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-mute); font-weight: 700; margin-bottom: 3px;
+  }
+  .brand h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+  .conn {
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line); background: var(--panel);
+    padding: 7px 12px; border-radius: 999px; cursor:pointer;
+    font-size: 13px; font-weight: 650; color: var(--text);
+    transition: border-color .2s ease;
+  }
+  .conn:active { opacity:.8; }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--off);
+    transition: background .25s ease;
+  }
+  .status-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+
+  /* ---------- Stage ---------- */
+  .stage {
+    position: relative; border-radius: 22px; overflow: hidden;
+    background:
+      radial-gradient(90% 60% at 50% 40%, rgba(255,180,110,0.04), transparent 70%),
+      #000;
+    border: 1px solid var(--line);
+    margin-bottom: 16px; aspect-ratio: 3 / 4; max-height: 46vh;
+  }
+  .stage svg { width: 100%; height: 100%; display: block; }
+  .stage-foot {
+    position:absolute; left:0; right:0; bottom:10px;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    pointer-events:none;
+  }
+  .stage-foot .cap {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+  }
+
+  /* ---------- Segment control ---------- */
+  .tabs {
+    display:flex; gap:4px; padding:4px; margin-bottom:14px;
+    background: var(--panel); border:1px solid var(--line); border-radius:14px;
+  }
+  .tab {
+    flex:1; appearance:none; border:none; cursor:pointer;
+    background:transparent; color:var(--text-dim);
+    font-size:13px; font-weight:650; padding:9px; border-radius:10px;
+    transition: background .18s ease, color .18s ease;
+  }
+  .tab.active { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
+
+  .view { display:none; }
+  .view.active { display:block; }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:16px; margin-bottom:12px;
+  }
+  .card-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .card-head .dot {
+    width:14px; height:14px; border-radius:50%;
+    box-shadow: 0 0 0 1px var(--line-2), 0 0 12px 1px currentColor; flex-shrink:0;
+  }
+  .card-head h2 { font-size:14px; font-weight:700; margin:0; flex:1; }
+  .card-head .tag { font-size:11px; color:var(--text-mute); font-weight:600; }
+
+  .control-row { display:flex; align-items:center; gap:14px; }
+
+  input[type="color"] {
+    -webkit-appearance:none; appearance:none; width:46px; height:46px;
+    border:none; border-radius:14px; background:none; padding:0; flex-shrink:0; cursor:pointer;
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding:2px; }
+  input[type="color"]::-webkit-color-swatch { border:none; border-radius:12px; }
+
+  .slider-group { flex:1; min-width:0; }
+  .slider-label {
+    display:flex; justify-content:space-between; font-size:12px;
+    color:var(--text-dim); margin-bottom:6px; font-weight:600;
+  }
+  .slider-label .val { color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  input[type="range"] {
+    -webkit-appearance:none; appearance:none; width:100%; height:6px;
+    border-radius:999px; background: rgba(255,255,255,0.10); accent-color: var(--accent);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%;
+    background:#fff; box-shadow: 0 1px 6px rgba(0,0,0,0.5); cursor:pointer;
+  }
+  .slider-group + .slider-group { margin-top: 12px; }
+
+  /* per-lantern rows */
+  .lantern-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
+  .lantern-row:first-child { border-top:none; }
+  .lantern-row input[type="color"] { width:38px; height:38px; border-radius:11px; }
+  .lantern-meta { flex:1; min-width:0; }
+  .lantern-name { font-size:13px; font-weight:700; }
+  .lantern-sub { font-size:11px; color:var(--text-mute); }
+  .mini-slider { width:110px; flex-shrink:0; }
+  .mini-val { font-size:11px; color:var(--text-dim); font-variant-numeric:tabular-nums; min-width:28px; text-align:right; }
+
+  /* scenes */
+  .scheme-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
+  .scheme-btn {
+    appearance:none; cursor:pointer; border:1px solid var(--line);
+    border-radius:13px; padding:12px 10px; text-align:left; font-weight:700;
+    font-size:13px; color:#fff; position:relative; overflow:hidden; min-height:58px;
+    display:flex; align-items:flex-end; text-shadow:0 1px 4px rgba(0,0,0,0.5);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .scheme-btn:active { transform:scale(0.96); }
+  .scheme-btn.active { box-shadow: 0 0 0 2px var(--accent), 0 0 16px rgba(255,157,77,0.4); }
+  .scheme-btn span { position:relative; z-index:1; }
+  .scheme-sunset { background:linear-gradient(120deg,#ff7a18,#ff3d46,#8f1a8c); }
+  .scheme-ocean  { background:linear-gradient(120deg,#12b0ff,#00d0c0,#0050b4); }
+  .scheme-forest { background:linear-gradient(120deg,#3fbf3f,#8fc410,#0a6a3c); }
+  .scheme-warm   { background:linear-gradient(120deg,#ffe6bd,#ffb45c,#e07a2c); color:#3a2410; text-shadow:none; }
+  .scheme-candle { background:linear-gradient(120deg,#ffcf8f,#ff9b52,#c85a2a); }
+  .scheme-berry  { background:linear-gradient(120deg,#ff8fb4,#e0468c,#7a1a6c); }
+  .scheme-ice    { background:linear-gradient(120deg,#dff6ff,#9fd8ff,#5a8fe0); color:#123; text-shadow:none; }
+  .scheme-custom { background:linear-gradient(120deg,#2a2a2e,#3a3a40); }
+  .scheme-off    { background:#1a1a1c; color:var(--text-dim); }
+
+  /* toggle switch */
+  .switch-row { display:flex; align-items:center; justify-content:space-between; }
+  .switch-row .lbl { font-size:13px; font-weight:650; }
+  .switch-row .sub { font-size:11px; color:var(--text-mute); margin-top:2px; }
+  .switch {
+    position:relative; width:46px; height:28px; border-radius:999px;
+    background: rgba(255,255,255,0.12); cursor:pointer; flex-shrink:0; transition: background .2s ease;
+  }
+  .switch::after {
+    content:""; position:absolute; top:3px; left:3px; width:22px; height:22px;
+    border-radius:50%; background:#fff; transition: transform .2s ease;
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { transform: translateX(18px); }
+
+  .btn-row { display:flex; gap:10px; }
+  .btn {
+    flex:1; appearance:none; cursor:pointer; border:1px solid var(--line);
+    background: var(--panel-2); color:var(--text); font-size:13px; font-weight:650;
+    padding:12px; border-radius:12px; transition: transform .12s ease;
+  }
+  .btn:active { transform:scale(0.97); }
+  .btn.primary { background: var(--accent); color:#2a1608; border-color:transparent; }
+  .btn.danger { color: var(--off); }
+
+  .hint { font-size:12px; color:var(--text-mute); margin:10px 2px 0; line-height:1.5; text-align:center; }
+
+  .unsupported { text-align:center; padding:36px 20px; color:var(--text-dim); font-size:14px; line-height:1.7; }
+  .unsupported strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Bluetooth LE · 7 lanterns</div>
+      <h1>Chandelier</h1>
+    </div>
+    <button class="conn" id="connectBtn"><span class="status-dot" id="statusDot"></span><span id="connLabel">Connect</span></button>
+  </header>
+
+  <!-- Live viewer -->
+  <div class="stage">
+    <svg id="chandelier" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid meet"
+         xmlns="http://www.w3.org/2000/svg" aria-label="Live chandelier preview">
+      <defs>
+        <!-- soft warm bloom for glow halos -->
+        <filter id="bloom" x="-120%" y="-120%" width="340%" height="340%">
+          <feGaussianBlur stdDeviation="14"/>
+        </filter>
+        <filter id="bloomTight" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="5"/>
+        </filter>
+        <!-- paper lantern body shading: lit center falling off to translucent edge -->
+        <radialGradient id="paperLit" cx="50%" cy="46%" r="58%">
+          <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.92"/>
+          <stop offset="42%" stop-color="#ffffff" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
+        <!-- edge darkening so the sphere reads round -->
+        <radialGradient id="paperEdge" cx="50%" cy="50%" r="50%">
+          <stop offset="70%" stop-color="#000000" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+        </radialGradient>
+      </defs>
+
+      <!-- simple minimal ceiling mount: thin cord to a small flush disc -->
+      <line x1="200" y1="0" x2="200" y2="70" stroke="#2a2620" stroke-width="2"/>
+      <circle cx="200" cy="8" r="5" fill="#2a2620"/>
+      <!-- support ring -->
+      <ellipse id="ring" cx="200" cy="120" rx="94" ry="24" fill="none"
+               stroke="#4a4237" stroke-width="2.5"/>
+      <ellipse cx="200" cy="120" rx="94" ry="24" fill="none" stroke="#000" stroke-width="1" opacity="0.5"/>
+
+      <g id="wires" stroke="#3a352c" stroke-width="1" opacity="0.75"></g>
+      <g id="bulbs"></g>
+    </svg>
+    <div class="stage-foot"><span class="cap" id="stageCap">Live preview</span></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-view="scenes">Scenes</button>
+    <button class="tab" data-view="master">All</button>
+    <button class="tab" data-view="each">Each</button>
+  </div>
+
+  <div id="app">
+
+    <!-- SCENES VIEW -->
+    <div class="view active" id="view-scenes">
+      <div class="card">
+        <div class="scheme-grid">
+          <button class="scheme-btn scheme-sunset" data-scheme="sunset"><span>Sunset</span></button>
+          <button class="scheme-btn scheme-candle" data-scheme="candle"><span>Candle</span></button>
+          <button class="scheme-btn scheme-warm"   data-scheme="warm"><span>Warm</span></button>
+          <button class="scheme-btn scheme-ocean"  data-scheme="ocean"><span>Ocean</span></button>
+          <button class="scheme-btn scheme-ice"    data-scheme="ice"><span>Ice</span></button>
+          <button class="scheme-btn scheme-forest" data-scheme="forest"><span>Forest</span></button>
+          <button class="scheme-btn scheme-berry"  data-scheme="berry"><span>Berry</span></button>
+          <button class="scheme-btn scheme-custom" data-scheme="custom"><span>My scene</span></button>
+          <button class="scheme-btn scheme-off"    data-scheme="off"><span>Off</span></button>
+        </div>
+        <p class="hint">Scenes fan a graded palette across the seven lanterns.</p>
+      </div>
+
+      <div class="card">
+        <div class="switch-row">
+          <div>
+            <div class="lbl">Gentle flicker</div>
+            <div class="sub">Soft candle-like shimmer on every lantern</div>
+          </div>
+          <div class="switch" id="flickerSwitch"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="saveScene">Save current as “My scene”</button>
+      </div>
+    </div>
+
+    <!-- MASTER VIEW -->
+    <div class="view" id="view-master">
+      <div class="card">
+        <div class="card-head">
+          <span class="dot" id="allDot" style="color:#ff9d4d"></span>
+          <h2>All lanterns together</h2>
+        </div>
+        <div class="control-row">
+          <input type="color" id="allColor" value="#ff9d4d">
+          <div class="slider-group">
+            <div class="slider-label"><span>Brightness</span><span class="val" id="allBrightVal">200</span></div>
+            <input type="range" id="allBright" min="0" max="255" value="200">
+          </div>
+        </div>
+        <div class="slider-group" style="margin-top:16px;">
+          <div class="slider-label"><span>Warmth</span><span class="val" id="allWarmVal">0</span></div>
+          <input type="range" id="allWarm" min="-100" max="100" value="0">
+        </div>
+        <p class="hint">Warmth nudges the whole set cooler (left) or warmer (right) without losing your hue.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="allOn">All on</button>
+        <button class="btn danger" id="allOff">All off</button>
+      </div>
+    </div>
+
+    <!-- EACH VIEW -->
+    <div class="view" id="view-each">
+      <div class="card" id="stripList"></div>
+      <div class="btn-row">
+        <button class="btn" id="mirror">Mirror left ↔ right</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="unsupported" id="unsupportedNote" style="display:none;">
+    Web Bluetooth isn't available in this browser.<br>
+    Open this page inside the <strong>Bluefy</strong> app on iPhone,<br>
+    or explore the live preview above.
+  </div>
+
+</div>
+
+<script>
+  /* ============================================================
+     LANTERN LAYOUT
+     0 = center 17"; ring of 6: two 10", two 8", two 6"
+     ============================================================ */
+  const BULBS = [
+    { name:"Center",  size:17, r:40, hex:"#ff9d4d" },
+    { name:"10\" left",  size:10, r:24, hex:"#ff7a3c" },
+    { name:"10\" right", size:10, r:24, hex:"#ff5a4a" },
+    { name:"8\" left",   size:8,  r:19, hex:"#ff466a" },
+    { name:"8\" right",  size:8,  r:19, hex:"#e0468c" },
+    { name:"6\" left",   size:6,  r:15, hex:"#b83c9c" },
+    { name:"6\" right",  size:6,  r:15, hex:"#96148c" },
+  ];
+
+  const RING = { cx:200, cy:120, rx:94, ry:24 };
+  // ring bulbs [1..6] = 10L,10R,8L,8R,6L,6R.
+  // Interleave sizes and push each same-size pair to opposite sides so
+  // identical lanterns are well separated (never adjacent, never same drop).
+  const RING_ANGLES = [155, 25, 205, 335, 235, 305];
+  // Per-lantern vertical drop below the ring (long drops so they hang low).
+  // Center drops lowest of all; same-size pairs also get slightly staggered drops.
+  const DROPS = [320, 140, 175, 210, 245, 285, 310]; // index 0 = center
+  const CENTER = { x:200, y: RING.cy + DROPS[0] };
+
+  /* ---- BLE UUIDs ---- */
+  const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+  const CHAR_BULB = [
+    "beb5483e-36e1-4688-b7f5-ea07361b26a1","beb5483e-36e1-4688-b7f5-ea07361b26a2",
+    "beb5483e-36e1-4688-b7f5-ea07361b26a3","beb5483e-36e1-4688-b7f5-ea07361b26a4",
+    "beb5483e-36e1-4688-b7f5-ea07361b26a5","beb5483e-36e1-4688-b7f5-ea07361b26a6",
+    "beb5483e-36e1-4688-b7f5-ea07361b26a7",
+  ];
+  const CHAR_ALL="beb5483e-36e1-4688-b7f5-ea07361b26a8", CHAR_SCHEME="beb5483e-36e1-4688-b7f5-ea07361b26a9";
+
+  let device, server, service; const chars={}; let demoMode=false;
+  const statusDot=document.getElementById("statusDot");
+  const connectBtn=document.getElementById("connectBtn");
+  const connLabel=document.getElementById("connLabel");
+  const stageCap=document.getElementById("stageCap");
+
+  if (!navigator.bluetooth) { document.getElementById("unsupportedNote").style.display="block"; }
+
+  /* ============================================================
+     RENDER
+     ============================================================ */
+  const svgNS="http://www.w3.org/2000/svg";
+  const bulbsG=document.getElementById("bulbs"), wiresG=document.getElementById("wires");
+  const state=BULBS.map(b=>({hex:b.hex, bright:200}));
+
+  const positions=BULBS.map((b,i)=>{
+    if(i===0) return {x:CENTER.x, y:CENTER.y, anchorX:RING.cx, anchorY:RING.cy};
+    const ang=RING_ANGLES[i-1]*Math.PI/180;
+    const ax=RING.cx+Math.cos(ang)*RING.rx, ay=RING.cy+Math.sin(ang)*RING.ry;
+    return { x:ax, y:ay+DROPS[i]+b.r, anchorX:ax, anchorY:ay };
+  });
+  const drawOrder=BULBS.map((_,i)=>i).sort((a,b)=>positions[a].y-positions[b].y);
+
+  function el(tag,attrs){ const n=document.createElementNS(svgNS,tag); for(const k in attrs) n.setAttribute(k,attrs[k]); return n; }
+
+  drawOrder.forEach(i=>{
+    const b=BULBS[i], p=positions[i];
+    // hanging cord
+    wiresG.appendChild(el("line",{x1:p.anchorX,y1:p.anchorY,x2:p.x,y2:p.y-b.r-4}));
+    const g=el("g",{});
+    // outer soft glow
+    const glow=el("circle",{cx:p.x,cy:p.y,r:b.r*2.4,filter:"url(#bloom)",id:`glow-${i}`});
+    // paper body (its color, translucent)
+    const body=el("circle",{cx:p.x,cy:p.y,r:b.r,id:`body-${i}`});
+    // ribs: vertical arcs to read as a paper lantern
+    const ribs=el("g",{id:`ribs-${i}`,opacity:"0.22"});
+    for(let k=-2;k<=2;k++){
+      const rx=Math.abs(k)===2?b.r*0.42:Math.abs(k)===1?b.r*0.74:b.r*0.9;
+      ribs.appendChild(el("ellipse",{cx:p.x,cy:p.y,rx:Math.max(rx,1),ry:b.r,
+        fill:"none",stroke:"#000",'stroke-width':"0.8"}));
+    }
+    // horizontal seam
+    ribs.appendChild(el("line",{x1:p.x-b.r,y1:p.y,x2:p.x+b.r,y2:p.y,stroke:"#000",'stroke-width':"0.6"}));
+    // lit falloff + edge darkening
+    const lit=el("circle",{cx:p.x,cy:p.y,r:b.r,fill:"url(#paperLit)",id:`lit-${i}`});
+    const edge=el("circle",{cx:p.x,cy:p.y,r:b.r,fill:"url(#paperEdge)"});
+    // top & bottom caps (paper lantern fittings)
+    const capT=el("rect",{x:p.x-b.r*0.22,y:p.y-b.r-3,width:b.r*0.44,height:5,rx:1.5,fill:"#2a2620"});
+    const capB=el("rect",{x:p.x-b.r*0.16,y:p.y+b.r-2,width:b.r*0.32,height:4,rx:1.5,fill:"#2a2620"});
+    g.append(glow,body,ribs,lit,edge,capT,capB);
+    bulbsG.appendChild(g);
+  });
+
+  function hexToRgb(hex){const c=hex.replace("#","");return [parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];}
+  function mul(hex,m){const [r,g,b]=hexToRgb(hex);return `rgb(${Math.round(r*m)},${Math.round(g*m)},${Math.round(b*m)})`;}
+
+  let flickerOn=false;
+  function renderBulb(i,flick=1){
+    const {hex,bright}=state[i];
+    const f=(bright/255)*flick;
+    const body=document.getElementById(`body-${i}`);
+    const lit=document.getElementById(`lit-${i}`);
+    const glow=document.getElementById(`glow-${i}`);
+    // paper body: dark when off, saturated warm color when lit
+    body.setAttribute("fill", mul(hex, 0.30+f*0.55));
+    lit.setAttribute("opacity", (0.25+f*0.75).toFixed(2));
+    glow.setAttribute("fill", hex);
+    glow.setAttribute("opacity", (0.05+f*0.5).toFixed(2));
+  }
+  function renderAll(){ BULBS.forEach((_,i)=>renderBulb(i)); }
+
+  /* ---- flicker loop ---- */
+  function flickerTick(){
+    if(flickerOn){
+      BULBS.forEach((_,i)=>{ const j=0.86+Math.random()*0.14; renderBulb(i,j); });
+    }
+    requestAnimationFrame(()=>setTimeout(flickerTick,90));
+  }
+  flickerTick();
+
+  /* ============================================================
+     BLE
+     ============================================================ */
+  async function writeChar(char,str){ if(demoMode||!char) return; try{ await char.writeValue(new TextEncoder().encode(str)); }catch(e){ console.error(e); } }
+  async function pushBulb(i){ const [r,g,b]=hexToRgb(state[i].hex); await writeChar(chars.bulb?.[i], `${r},${g},${b},${state[i].bright}`); }
+  async function pushAll(hex,bright){ const [r,g,b]=hexToRgb(hex); await writeChar(chars.all, `${r},${g},${b},${bright}`); }
+  async function pushScheme(name){ await writeChar(chars.scheme,name); }
+
+  /* ============================================================
+     Tabs
+     ============================================================ */
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.addEventListener("click",()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      document.getElementById("view-"+t.dataset.view).classList.add("active");
+    });
+  });
+
+  /* ============================================================
+     Master
+     ============================================================ */
+  const allColor=document.getElementById("allColor"), allBright=document.getElementById("allBright");
+  const allBrightVal=document.getElementById("allBrightVal"), allDot=document.getElementById("allDot");
+  const allWarm=document.getElementById("allWarm"), allWarmVal=document.getElementById("allWarmVal");
+
+  function warmShift(hex,amt){ // amt -100..100 -> shift R/B channels
+    let [r,g,b]=hexToRgb(hex); const t=amt/100;
+    r=Math.min(255,Math.max(0,r+t*40)); b=Math.min(255,Math.max(0,b-t*40));
+    return `#${[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("")}`;
+  }
+  function applyMaster(){
+    const base=allColor.value, bright=+allBright.value;
+    const hex=warmShift(base, +allWarm.value);
+    allDot.style.color=hex;
+    BULBS.forEach((_,i)=>{ state[i].hex=hex; state[i].bright=bright; renderBulb(i); syncRow(i); });
+    pushAll(hex,bright);
+    clearSceneActive();
+  }
+  allColor.addEventListener("input",applyMaster);
+  allBright.addEventListener("input",()=>{allBrightVal.textContent=allBright.value; applyMaster();});
+  allWarm.addEventListener("input",()=>{allWarmVal.textContent=allWarm.value; applyMaster();});
+  document.getElementById("allOn").addEventListener("click",()=>{ allBright.value=230; allBrightVal.textContent="230"; applyMaster(); });
+  document.getElementById("allOff").addEventListener("click",()=>{ allBright.value=0; allBrightVal.textContent="0"; applyMaster(); });
+
+  /* ============================================================
+     Per-lantern rows
+     ============================================================ */
+  const stripList=document.getElementById("stripList");
+  function syncRow(i){
+    const c=document.getElementById(`b${i}Color`), s=document.getElementById(`b${i}Bright`), v=document.getElementById(`b${i}Val`);
+    if(c) c.value=state[i].hex; if(s) s.value=state[i].bright; if(v) v.textContent=state[i].bright;
+  }
+  BULBS.forEach((b,i)=>{
+    const row=document.createElement("div"); row.className="lantern-row";
+    row.innerHTML=`
+      <input type="color" id="b${i}Color" value="${b.hex}">
+      <div class="lantern-meta">
+        <div class="lantern-name">${b.name}</div>
+        <div class="lantern-sub">${b.size}" · D${i}</div>
+      </div>
+      <input type="range" class="mini-slider" id="b${i}Bright" min="0" max="255" value="200">
+      <span class="mini-val" id="b${i}Val">200</span>`;
+    stripList.appendChild(row);
+    row.querySelector(`#b${i}Color`).addEventListener("input",e=>{ state[i].hex=e.target.value; renderBulb(i); pushBulb(i); clearSceneActive(); });
+    row.querySelector(`#b${i}Bright`).addEventListener("input",e=>{ state[i].bright=+e.target.value; document.getElementById(`b${i}Val`).textContent=e.target.value; renderBulb(i); pushBulb(i); clearSceneActive(); });
+  });
+
+  // mirror left <-> right (pairs 1/2, 3/4, 5/6)
+  document.getElementById("mirror").addEventListener("click",()=>{
+    [[1,2],[3,4],[5,6]].forEach(([l,r])=>{ state[r].hex=state[l].hex; state[r].bright=state[l].bright; renderBulb(r); syncRow(r); pushBulb(r); });
+  });
+
+  /* ============================================================
+     Scenes
+     ============================================================ */
+  const SCENES={
+    sunset:["#ffb347","#ff8a3c","#ff6a3c","#ff4a5a","#e83c78","#b83c9c","#96148c"],
+    candle:["#ffd9a0","#ffc078","#ffa85c","#ff924a","#f07a3c","#d8602e","#c04a24"],
+    warm:  ["#fff0d4","#ffe6bd","#ffdba6","#ffd090","#ffc478","#ffb860","#ffab4c"],
+    ocean: ["#7fe8ff","#38c8ff","#12a0ff","#0a78e0","#0a50b4","#123c9c","#0a2a78"],
+    ice:   ["#eaffff","#cdf3ff","#a8e2ff","#86ccff","#6fb0f0","#5a90e0","#4a72cf"],
+    forest:["#d4f08a","#9fd83c","#5fbf3c","#2ea04a","#1a8a4a","#0a6a3c","#0a4a2c"],
+    berry: ["#ffc0d8","#ff8fb4","#f0609c","#e0468c","#b83c9c","#8a2a8c","#5a1a6c"],
+    off:   Array(7).fill("#141210"),
+  };
+  let customScene=null;
+
+  function applyScene(name){
+    let pal = name==="custom" ? (customScene||SCENES.warm) : SCENES[name];
+    if(!pal) return;
+    const off = name==="off";
+    BULBS.forEach((_,i)=>{
+      state[i].hex=pal[i];
+      state[i].bright= off?0 : (name==="custom"&&customScene?customScene.b[i]:215);
+      renderBulb(i); syncRow(i); pushBulb(i);
+    });
+    pushScheme(name);
+    document.querySelectorAll(".scheme-btn").forEach(x=>x.classList.remove("active"));
+    document.querySelector(`.scheme-btn[data-scheme="${name}"]`)?.classList.add("active");
+  }
+  function clearSceneActive(){ document.querySelectorAll(".scheme-btn").forEach(x=>x.classList.remove("active")); }
+  document.querySelectorAll(".scheme-btn").forEach(btn=>btn.addEventListener("click",()=>applyScene(btn.dataset.scheme)));
+
+  // save current as custom
+  document.getElementById("saveScene").addEventListener("click",()=>{
+    customScene = { 0:0, hex:state.map(s=>s.hex), b:state.map(s=>s.bright) };
+    customScene = state.map(s=>s.hex); customScene.b = state.map(s=>s.bright);
+    const btn=document.getElementById("saveScene"); btn.textContent="Saved ✓ — tap “My scene” to recall";
+    setTimeout(()=>btn.textContent="Save current as “My scene”",2200);
+  });
+
+  // flicker toggle
+  const flickerSwitch=document.getElementById("flickerSwitch");
+  flickerSwitch.addEventListener("click",()=>{ flickerOn=!flickerOn; flickerSwitch.classList.toggle("on",flickerOn); if(!flickerOn) renderAll(); });
+
+  /* ============================================================
+     Connect / demo
+     ============================================================ */
+  connectBtn.addEventListener("click", async ()=>{
+    if(!navigator.bluetooth){ // fall into preview
+      demoMode=true; statusDot.classList.add("connected"); connLabel.textContent="Preview"; stageCap.textContent="Preview mode · colors not sent"; return;
+    }
+    try{
+      device=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
+      server=await device.gatt.connect(); service=await server.getPrimaryService(SERVICE_UUID);
+      chars.bulb=[]; for(let i=0;i<7;i++) chars.bulb[i]=await service.getCharacteristic(CHAR_BULB[i]);
+      chars.all=await service.getCharacteristic(CHAR_ALL); chars.scheme=await service.getCharacteristic(CHAR_SCHEME);
+      demoMode=false; statusDot.classList.add("connected");
+      connLabel.textContent=device.name?device.name:"Connected"; stageCap.textContent="Connected · live";
+      device.addEventListener("gattserverdisconnected",onDisconnected);
+    }catch(err){ console.error(err); alert("Connection failed or cancelled: "+err.message); }
+  });
+  function onDisconnected(){ statusDot.classList.remove("connected"); connLabel.textContent="Connect"; stageCap.textContent="Live preview"; }
+
+  renderAll();
+</script>
+</body>
+</html>
