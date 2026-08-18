@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Strip Control</title>
+<style>
+  :root {
+    --sky-top: #1b1230;
+    --sky-mid: #4a2545;
+    --sky-bottom: #a8442f;
+    --sun: #ffb347;
+    --panel: rgba(20, 12, 28, 0.72);
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --text-main: #f4ece2;
+    --text-dim: #c9b8b0;
+    --accent: #ff8a5c;
+    --accent-dim: #8a5348;
+    --ok: #7fd8a0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+    color: var(--text-main);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+    background-attachment: fixed;
+  }
+
+  body {
+    padding: max(20px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  }
+
+  .sun {
+    position: fixed;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--sun), transparent 70%);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+    padding-top: 8px;
+  }
+
+  header .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .connect-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #d95c4a;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+  }
+
+  .status-dot.connected { background: var(--ok); }
+
+  #connectBtn {
+    appearance: none;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+
+  #connectBtn:active { opacity: 0.7; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 18px 18px 20px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .panel-title h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.3);
+    flex-shrink: 0;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  input[type="color"] {
+    -webkit-appearance: none;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 12px; }
+  input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; }
+
+  .slider-group { flex: 1; }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .apply-btn {
+    width: 100%;
+    appearance: none;
+    border: none;
+    background: var(--accent);
+    color: #2a1710;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 12px;
+    margin-top: 2px;
+  }
+
+  .apply-btn:active { opacity: 0.75; }
+
+  .scheme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .scheme-btn {
+    appearance: none;
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-main);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scheme-btn span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .scheme-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.55;
+  }
+
+  .scheme-sunset::before { background: linear-gradient(120deg, #ff5e00, #ff3d46, #96148c); }
+  .scheme-ocean::before { background: linear-gradient(120deg, #0096ff, #00c8c8, #0050b4); }
+  .scheme-forest::before { background: linear-gradient(120deg, #1e9628, #78a014, #0a5a32); }
+  .scheme-off::before { background: #2a2028; opacity: 0.9; }
+
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .disabled-note {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="sun"></div>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Bluetooth LE</div>
+    <h1>Strip Control</h1>
+  </header>
+
+  <div class="connect-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <button id="connectBtn">Connect to strips</button>
+  </div>
+
+  <div id="app" style="display:none;">
+
+    <div class="panel">
+      <div class="panel-title"><h2>All strips together</h2></div>
+      <div class="control-row">
+        <input type="color" id="allColor" value="#ff8a3c">
+        <div class="slider-group">
+          <div class="slider-label"><span>Brightness</span><span id="allBrightVal">200</span></div>
+          <input type="range" id="allBright" min="0" max="255" value="200">
+        </div>
+      </div>
+      <button class="apply-btn" data-target="all">Apply to all strips</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><h2><span class="swatch" style="background:#ff8a3c"></span>Strip 1 — D0</h2></div>
+      <div class="control-row">
+        <input type="color" id="s0Color" value="#ff8a3c">
+        <div class="slider-group">
+          <div class="slider-label"><span>Brightness</span><span id="s0BrightVal">200</span></div>
+          <input type="range" id="s0Bright" min="0" max="255" value="200">
+        </div>
+      </div>
+      <button class="apply-btn" data-target="0">Apply to Strip 1</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><h2><span class="swatch" style="background:#ff3d46"></span>Strip 2 — D1</h2></div>
+      <div class="control-row">
+        <input type="color" id="s1Color" value="#ff3d46">
+        <div class="slider-group">
+          <div class="slider-label"><span>Brightness</span><span id="s1BrightVal">200</span></div>
+          <input type="range" id="s1Bright" min="0" max="255" value="200">
+        </div>
+      </div>
+      <button class="apply-btn" data-target="1">Apply to Strip 2</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><h2><span class="swatch" style="background:#96148c"></span>Strip 3 — D2</h2></div>
+      <div class="control-row">
+        <input type="color" id="s2Color" value="#96148c">
+        <div class="slider-group">
+          <div class="slider-label"><span>Brightness</span><span id="s2BrightVal">200</span></div>
+          <input type="range" id="s2Bright" min="0" max="255" value="200">
+        </div>
+      </div>
+      <button class="apply-btn" data-target="2">Apply to Strip 3</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><h2>Color schemes</h2></div>
+      <div class="scheme-grid">
+        <button class="scheme-btn scheme-sunset" data-scheme="sunset"><span>Sunset</span></button>
+        <button class="scheme-btn scheme-ocean" data-scheme="ocean"><span>Ocean</span></button>
+        <button class="scheme-btn scheme-forest" data-scheme="forest"><span>Forest</span></button>
+        <button class="scheme-btn scheme-off" data-scheme="off"><span>Off</span></button>
+      </div>
+      <p class="hint">Schemes set each strip to a different complementary color automatically.</p>
+    </div>
+
+  </div>
+
+  <div class="disabled-note" id="unsupportedNote" style="display:none;">
+    Web Bluetooth isn't available in this browser.<br>
+    Open this page inside the <strong>Bluefy</strong> app on iPhone.
+  </div>
+</div>
+
+<script>
+  const SERVICE_UUID     = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+  const CHAR_UUID_STRIP0 = "beb5483e-36e1-4688-b7f5-ea07361b26a1";
+  const CHAR_UUID_STRIP1 = "beb5483e-36e1-4688-b7f5-ea07361b26a2";
+  const CHAR_UUID_STRIP2 = "beb5483e-36e1-4688-b7f5-ea07361b26a3";
+  const CHAR_UUID_ALL    = "beb5483e-36e1-4688-b7f5-ea07361b26a4";
+  const CHAR_UUID_SCHEME = "beb5483e-36e1-4688-b7f5-ea07361b26a5";
+
+  let device, server, service;
+  let characteristics = {};
+
+  const statusDot = document.getElementById('statusDot');
+  const connectBtn = document.getElementById('connectBtn');
+  const app = document.getElementById('app');
+
+  if (!navigator.bluetooth) {
+    document.getElementById('unsupportedNote').style.display = 'block';
+    connectBtn.style.display = 'none';
+  }
+
+  connectBtn.addEventListener('click', async () => {
+    try {
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [SERVICE_UUID] }]
+      });
+
+      server = await device.gatt.connect();
+      service = await server.getPrimaryService(SERVICE_UUID);
+
+      characteristics['0'] = await service.getCharacteristic(CHAR_UUID_STRIP0);
+      characteristics['1'] = await service.getCharacteristic(CHAR_UUID_STRIP1);
+      characteristics['2'] = await service.getCharacteristic(CHAR_UUID_STRIP2);
+      characteristics['all'] = await service.getCharacteristic(CHAR_UUID_ALL);
+      characteristics['scheme'] = await service.getCharacteristic(CHAR_UUID_SCHEME);
+
+      statusDot.classList.add('connected');
+      connectBtn.textContent = device.name ? `Connected: ${device.name}` : 'Connected';
+      app.style.display = 'block';
+
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+    } catch (err) {
+      console.error(err);
+      alert('Connection failed or cancelled: ' + err.message);
+    }
+  });
+
+  function onDisconnected() {
+    statusDot.classList.remove('connected');
+    connectBtn.textContent = 'Connect to strips';
+    app.style.display = 'none';
+  }
+
+  function hexToRgb(hex) {
+    const clean = hex.replace('#', '');
+    return [
+      parseInt(clean.substring(0, 2), 16),
+      parseInt(clean.substring(2, 4), 16),
+      parseInt(clean.substring(4, 6), 16)
+    ];
+  }
+
+  async function sendColorCommand(target, r, g, b, brightness) {
+    const char = characteristics[target];
+    if (!char) return;
+    const payload = `${r},${g},${b},${brightness}`;
+    const encoder = new TextEncoder();
+    await char.writeValue(encoder.encode(payload));
+  }
+
+  async function sendSchemeCommand(name) {
+    const char = characteristics['scheme'];
+    if (!char) return;
+    const encoder = new TextEncoder();
+    await char.writeValue(encoder.encode(name));
+  }
+
+  // Wire up brightness value labels
+  [
+    ['allBright', 'allBrightVal'],
+    ['s0Bright', 's0BrightVal'],
+    ['s1Bright', 's1BrightVal'],
+    ['s2Bright', 's2BrightVal']
+  ].forEach(([sliderId, labelId]) => {
+    const slider = document.getElementById(sliderId);
+    const label = document.getElementById(labelId);
+    slider.addEventListener('input', () => { label.textContent = slider.value; });
+  });
+
+  // Apply buttons for individual/all strips
+  document.querySelectorAll('.apply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const prefix = target === 'all' ? 'all' : `s${target}`;
+      const colorInput = document.getElementById(`${prefix}Color`);
+      const brightInput = document.getElementById(`${prefix}Bright`);
+      const [r, g, b] = hexToRgb(colorInput.value);
+      sendColorCommand(target, r, g, b, brightInput.value);
+    });
+  });
+
+  // Scheme buttons
+  document.querySelectorAll('.scheme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sendSchemeCommand(btn.dataset.scheme);
+    });
+  });
+</script>
+
+</body>
+</html>
