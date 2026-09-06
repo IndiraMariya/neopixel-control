@@ -6,18 +6,18 @@
 <title>Chandelier Control</title>
 <style>
   :root {
-    --bg: #000000;
-    --panel: #0e0e10;
-    --panel-2: #141416;
-    --line: rgba(255,255,255,0.08);
-    --line-2: rgba(255,255,255,0.14);
-    --text: #f2f0ea;
-    --text-dim: #8f8c85;
-    --text-mute: #5c5a55;
-    --accent: #ff9d4d;
-    --accent-ink: #ffcf9e;
-    --ok: #5fd88f;
-    --off: #d9584a;
+    --bg: #f6f5f2;
+    --panel: #ffffff;
+    --panel-2: #f0eee8;
+    --line: rgba(0,0,0,0.09);
+    --line-2: rgba(0,0,0,0.16);
+    --text: #1c1b18;
+    --text-dim: #6b6960;
+    --text-mute: #9a978d;
+    --accent: #e8791a;
+    --accent-ink: #a85c10;
+    --ok: #2f9e58;
+    --off: #c23b2e;
   }
 
   * { box-sizing: border-box; }
@@ -33,7 +33,7 @@
   .wrap { max-width: 440px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 
   /* ---------- Header ---------- */
-  header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
   .brand .eyebrow {
     font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
     color: var(--text-mute); font-weight: 700; margin-bottom: 3px;
@@ -44,75 +44,68 @@
     border:1px solid var(--line); background: var(--panel);
     padding: 7px 12px; border-radius: 999px; cursor:pointer;
     font-size: 13px; font-weight: 650; color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     transition: border-color .2s ease;
   }
   .conn:active { opacity:.8; }
+  .conn:disabled { opacity:.55; cursor:default; }
+  .conn:focus-visible, .btn:focus-visible, .scheme-btn:focus-visible,
+  .switch:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%; background: var(--off);
     transition: background .25s ease;
   }
   .status-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-
-  /* ---------- Stage ---------- */
-  .stage {
-    position: relative; border-radius: 22px; overflow: hidden;
-    background:
-      radial-gradient(90% 60% at 50% 40%, rgba(255,180,110,0.04), transparent 70%),
-      #000;
-    border: 1px solid var(--line);
-    margin-bottom: 16px; aspect-ratio: 3 / 4; max-height: 46vh;
-  }
-  .stage svg { width: 100%; height: 100%; display: block; }
-  .stage-foot {
-    position:absolute; left:0; right:0; bottom:10px;
-    display:flex; align-items:center; justify-content:center; gap:14px;
-    pointer-events:none;
-  }
-  .stage-foot .cap {
-    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-    color: rgba(255,255,255,0.28);
-  }
-
-  /* ---------- Segment control ---------- */
-  .tabs {
-    display:flex; gap:4px; padding:4px; margin-bottom:14px;
-    background: var(--panel); border:1px solid var(--line); border-radius:14px;
-  }
-  .tab {
-    flex:1; appearance:none; border:none; cursor:pointer;
-    background:transparent; color:var(--text-dim);
-    font-size:13px; font-weight:650; padding:9px; border-radius:10px;
-    transition: background .18s ease, color .18s ease;
-  }
-  .tab.active { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
-
-  .view { display:none; }
-  .view.active { display:block; }
+  .status-dot.connecting { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
 
   /* ---------- Cards ---------- */
   .card {
     background: var(--panel); border:1px solid var(--line);
     border-radius:16px; padding:16px; margin-bottom:12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
   .card-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .card-head .dot {
     width:14px; height:14px; border-radius:50%;
-    box-shadow: 0 0 0 1px var(--line-2), 0 0 12px 1px currentColor; flex-shrink:0;
+    box-shadow: 0 0 0 1px var(--line-2), 0 0 10px 1px currentColor; flex-shrink:0;
   }
   .card-head h2 { font-size:14px; font-weight:700; margin:0; flex:1; }
-  .card-head .tag { font-size:11px; color:var(--text-mute); font-weight:600; }
 
-  .control-row { display:flex; align-items:center; gap:14px; }
-
-  input[type="color"] {
-    -webkit-appearance:none; appearance:none; width:46px; height:46px;
-    border:none; border-radius:14px; background:none; padding:0; flex-shrink:0; cursor:pointer;
-    box-shadow: inset 0 0 0 1px var(--line-2);
+  /* ---------- Color wheel ---------- */
+  .wheel-card { display:flex; flex-direction:column; align-items:center; gap:18px; padding:6px 0 2px; }
+  .wheel {
+    position:relative; width:188px; height:188px; border-radius:50%; flex-shrink:0;
+    background:
+      radial-gradient(circle at 50% 50%, #fff 0%, rgba(255,255,255,0) 62%),
+      conic-gradient(from 90deg, #ff0000, #ffe600, #1aff4e, #17e6e6, #2a5cff, #d61aff, #ff0000);
+    box-shadow: inset 0 0 0 1px var(--line-2), 0 10px 22px rgba(0,0,0,0.14);
+    touch-action:none; cursor:pointer;
   }
-  input[type="color"]::-webkit-color-swatch-wrapper { padding:2px; }
-  input[type="color"]::-webkit-color-swatch { border:none; border-radius:12px; }
+  .wheel-sm { width:132px; height:132px; }
+  .wheel-thumb {
+    position:absolute; top:50%; left:50%; width:24px; height:24px; margin:-12px 0 0 -12px;
+    border-radius:50%; border:3px solid #fff; box-sizing:border-box;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.2);
+    pointer-events:none;
+  }
+  .wheel-sm .wheel-thumb { width:19px; height:19px; margin:-9.5px 0 0 -9.5px; border-width:2.5px; }
 
-  .slider-group { flex:1; min-width:0; }
+  .swatch {
+    appearance:none; -webkit-appearance:none; width:38px; height:38px; border-radius:11px;
+    border:none; padding:0; flex-shrink:0; cursor:pointer;
+    box-shadow: inset 0 0 0 1px var(--line-2);
+    transition: box-shadow .15s ease, transform .12s ease;
+  }
+  .swatch:active { transform:scale(0.94); }
+  .strip-item.expanded .swatch { box-shadow: 0 0 0 2px var(--accent); }
+
+  .wheel-slot { display:none; justify-content:center; padding-top:16px; }
+  .wheel-slot.open { display:flex; animation: toast-in .18s ease; }
+
+  .slider-group { flex:1; min-width:0; width:100%; }
   .slider-label {
     display:flex; justify-content:space-between; font-size:12px;
     color:var(--text-dim); margin-bottom:6px; font-weight:600;
@@ -120,57 +113,54 @@
   .slider-label .val { color: var(--accent-ink); font-variant-numeric: tabular-nums; }
   input[type="range"] {
     -webkit-appearance:none; appearance:none; width:100%; height:6px;
-    border-radius:999px; background: rgba(255,255,255,0.10); accent-color: var(--accent);
+    border-radius:999px; background: rgba(0,0,0,0.09); accent-color: var(--accent);
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance:none; appearance:none; width:20px; height:20px; border-radius:50%;
-    background:#fff; box-shadow: 0 1px 6px rgba(0,0,0,0.5); cursor:pointer;
+    background:#fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 0 0 1px var(--line-2); cursor:pointer;
   }
-  .slider-group + .slider-group { margin-top: 12px; }
 
-  /* per-lantern rows */
-  .lantern-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
-  .lantern-row:first-child { border-top:none; }
-  .lantern-row input[type="color"] { width:38px; height:38px; border-radius:11px; }
-  .lantern-meta { flex:1; min-width:0; }
-  .lantern-name { font-size:13px; font-weight:700; }
-  .lantern-sub { font-size:11px; color:var(--text-mute); }
-  .mini-slider { width:110px; flex-shrink:0; }
-  .mini-val { font-size:11px; color:var(--text-dim); font-variant-numeric:tabular-nums; min-width:28px; text-align:right; }
+  /* per-strip rows */
+  .strip-item { padding:13px 0; border-top:1px solid var(--line); }
+  .strip-item:first-child { padding-top:2px; border-top:none; }
+  .strip-row { display:flex; align-items:center; gap:12px; }
+  .strip-meta { flex:1; min-width:0; }
+  .strip-name { font-size:13px; font-weight:700; }
+  .strip-sub { font-size:11px; color:var(--text-mute); }
+  .strip-slider-row { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .mini-slider { flex:1; min-width:0; }
+  .mini-val { font-size:11px; color:var(--text-dim); font-variant-numeric:tabular-nums; min-width:30px; text-align:right; }
+  .mini-switch { width:38px; height:24px; flex-shrink:0; }
+  .mini-switch::after { width:18px; height:18px; }
+  .mini-switch.on::after { transform:translateX(14px); }
+  .strip-item.is-off .strip-name { color:var(--text-mute); }
+  .strip-item.is-off .strip-sub { color:var(--text-mute); opacity:.7; }
 
   /* scenes */
-  .scheme-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
+  .scheme-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
   .scheme-btn {
     appearance:none; cursor:pointer; border:1px solid var(--line);
-    border-radius:13px; padding:12px 10px; text-align:left; font-weight:700;
-    font-size:13px; color:#fff; position:relative; overflow:hidden; min-height:58px;
+    border-radius:13px; padding:14px 12px; text-align:left; font-weight:700;
+    font-size:13px; color:#fff; position:relative; overflow:hidden; min-height:60px;
     display:flex; align-items:flex-end; text-shadow:0 1px 4px rgba(0,0,0,0.5);
     transition: transform .12s ease, box-shadow .12s ease;
   }
   .scheme-btn:active { transform:scale(0.96); }
-  .scheme-btn.active { box-shadow: 0 0 0 2px var(--accent), 0 0 16px rgba(255,157,77,0.4); }
+  .scheme-btn.active { box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px rgba(232,121,26,0.18); }
   .scheme-btn span { position:relative; z-index:1; }
   .scheme-sunset { background:linear-gradient(120deg,#ff7a18,#ff3d46,#8f1a8c); }
   .scheme-ocean  { background:linear-gradient(120deg,#12b0ff,#00d0c0,#0050b4); }
   .scheme-forest { background:linear-gradient(120deg,#3fbf3f,#8fc410,#0a6a3c); }
-  .scheme-warm   { background:linear-gradient(120deg,#ffe6bd,#ffb45c,#e07a2c); color:#3a2410; text-shadow:none; }
-  .scheme-candle { background:linear-gradient(120deg,#ffcf8f,#ff9b52,#c85a2a); }
-  .scheme-berry  { background:linear-gradient(120deg,#ff8fb4,#e0468c,#7a1a6c); }
-  .scheme-ice    { background:linear-gradient(120deg,#dff6ff,#9fd8ff,#5a8fe0); color:#123; text-shadow:none; }
-  .scheme-custom { background:linear-gradient(120deg,#2a2a2e,#3a3a40); }
-  .scheme-off    { background:#1a1a1c; color:var(--text-dim); }
+  .scheme-off    { background:#1c1c1c; color:#b8b6b0; }
 
   /* toggle switch */
-  .switch-row { display:flex; align-items:center; justify-content:space-between; }
-  .switch-row .lbl { font-size:13px; font-weight:650; }
-  .switch-row .sub { font-size:11px; color:var(--text-mute); margin-top:2px; }
   .switch {
     position:relative; width:46px; height:28px; border-radius:999px;
-    background: rgba(255,255,255,0.12); cursor:pointer; flex-shrink:0; transition: background .2s ease;
+    background: rgba(0,0,0,0.14); cursor:pointer; flex-shrink:0; transition: background .2s ease;
   }
   .switch::after {
     content:""; position:absolute; top:3px; left:3px; width:22px; height:22px;
-    border-radius:50%; background:#fff; transition: transform .2s ease;
+    border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25); transition: transform .2s ease;
   }
   .switch.on { background: var(--accent); }
   .switch.on::after { transform: translateX(18px); }
@@ -182,13 +172,35 @@
     padding:12px; border-radius:12px; transition: transform .12s ease;
   }
   .btn:active { transform:scale(0.97); }
-  .btn.primary { background: var(--accent); color:#2a1608; border-color:transparent; }
+  .btn.primary { background: var(--accent); color:#fff; border-color:transparent; }
   .btn.danger { color: var(--off); }
 
   .hint { font-size:12px; color:var(--text-mute); margin:10px 2px 0; line-height:1.5; text-align:center; }
 
   .unsupported { text-align:center; padding:36px 20px; color:var(--text-dim); font-size:14px; line-height:1.7; }
   .unsupported strong { color: var(--text); }
+
+  /* ---------- Toasts ---------- */
+  .toasts {
+    position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    pointer-events:none; z-index:50;
+  }
+  .toast {
+    max-width: 380px; width:calc(100% - 32px);
+    background: var(--panel); border:1px solid var(--line-2);
+    color: var(--text); font-size:13px; font-weight:600;
+    padding:11px 14px; border-radius:12px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    display:flex; align-items:center; gap:9px;
+    animation: toast-in .22s ease;
+  }
+  .toast.error { border-color: rgba(194,59,46,0.4); }
+  .toast.error .toast-dot { background: var(--off); }
+  .toast.ok .toast-dot { background: var(--ok); }
+  .toast-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .toast.leaving { animation: toast-out .18s ease forwards; }
+  @keyframes toast-in { from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes toast-out { to{ opacity:0; transform:translateY(6px); } }
 </style>
 </head>
 <body>
@@ -196,111 +208,40 @@
 
   <header>
     <div class="brand">
-      <div class="eyebrow">Bluetooth LE · 7 lanterns</div>
+      <div class="eyebrow">Bluetooth LE · 6 strips</div>
       <h1>Chandelier</h1>
     </div>
-    <button class="conn" id="connectBtn"><span class="status-dot" id="statusDot"></span><span id="connLabel">Connect</span></button>
+    <button class="conn" id="connectBtn" aria-label="Connect to chandelier via Bluetooth"><span class="status-dot" id="statusDot"></span><span id="connLabel">Connect</span></button>
   </header>
-
-  <!-- Live viewer -->
-  <div class="stage">
-    <svg id="chandelier" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid meet"
-         xmlns="http://www.w3.org/2000/svg" aria-label="Live chandelier preview">
-      <defs>
-        <!-- soft warm bloom for glow halos -->
-        <filter id="bloom" x="-120%" y="-120%" width="340%" height="340%">
-          <feGaussianBlur stdDeviation="14"/>
-        </filter>
-        <filter id="bloomTight" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="5"/>
-        </filter>
-        <!-- paper lantern body shading: lit center falling off to translucent edge -->
-        <radialGradient id="paperLit" cx="50%" cy="46%" r="58%">
-          <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.92"/>
-          <stop offset="42%" stop-color="#ffffff" stop-opacity="0.30"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-        </radialGradient>
-        <!-- edge darkening so the sphere reads round -->
-        <radialGradient id="paperEdge" cx="50%" cy="50%" r="50%">
-          <stop offset="70%" stop-color="#000000" stop-opacity="0"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
-        </radialGradient>
-      </defs>
-
-      <!-- simple minimal ceiling mount: thin cord to a small flush disc -->
-      <line x1="200" y1="0" x2="200" y2="70" stroke="#2a2620" stroke-width="2"/>
-      <circle cx="200" cy="8" r="5" fill="#2a2620"/>
-      <!-- support ring -->
-      <ellipse id="ring" cx="200" cy="120" rx="94" ry="24" fill="none"
-               stroke="#4a4237" stroke-width="2.5"/>
-      <ellipse cx="200" cy="120" rx="94" ry="24" fill="none" stroke="#000" stroke-width="1" opacity="0.5"/>
-
-      <g id="wires" stroke="#3a352c" stroke-width="1" opacity="0.75"></g>
-      <g id="bulbs"></g>
-    </svg>
-    <div class="stage-foot"><span class="cap" id="stageCap">Live preview</span></div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" data-view="scenes">Scenes</button>
-    <button class="tab" data-view="master">All</button>
-    <button class="tab" data-view="each">Each</button>
-  </div>
 
   <div id="app">
 
-    <!-- SCENES VIEW -->
-    <div class="view active" id="view-scenes">
-      <div class="card">
-        <div class="scheme-grid">
-          <button class="scheme-btn scheme-sunset" data-scheme="sunset"><span>Sunset</span></button>
-          <button class="scheme-btn scheme-candle" data-scheme="candle"><span>Candle</span></button>
-          <button class="scheme-btn scheme-warm"   data-scheme="warm"><span>Warm</span></button>
-          <button class="scheme-btn scheme-ocean"  data-scheme="ocean"><span>Ocean</span></button>
-          <button class="scheme-btn scheme-ice"    data-scheme="ice"><span>Ice</span></button>
-          <button class="scheme-btn scheme-forest" data-scheme="forest"><span>Forest</span></button>
-          <button class="scheme-btn scheme-berry"  data-scheme="berry"><span>Berry</span></button>
-          <button class="scheme-btn scheme-custom" data-scheme="custom"><span>My scene</span></button>
-          <button class="scheme-btn scheme-off"    data-scheme="off"><span>Off</span></button>
-        </div>
-        <p class="hint">Scenes fan a graded palette across the seven lanterns.</p>
+    <!-- SCENES -->
+    <div class="card">
+      <div class="card-head"><h2>Scenes</h2></div>
+      <div class="scheme-grid">
+        <button class="scheme-btn scheme-sunset" data-scheme="sunset"><span>Sunset</span></button>
+        <button class="scheme-btn scheme-ocean"  data-scheme="ocean"><span>Ocean</span></button>
+        <button class="scheme-btn scheme-forest" data-scheme="forest"><span>Forest</span></button>
+        <button class="scheme-btn scheme-off"    data-scheme="off"><span>Off</span></button>
       </div>
-
-      <div class="card">
-        <div class="switch-row">
-          <div>
-            <div class="lbl">Gentle flicker</div>
-            <div class="sub">Soft candle-like shimmer on every lantern</div>
-          </div>
-          <div class="switch" id="flickerSwitch"></div>
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn" id="saveScene">Save current as “My scene”</button>
-      </div>
+      <p class="hint">Applies a preset across all six strips.</p>
     </div>
 
-    <!-- MASTER VIEW -->
-    <div class="view" id="view-master">
-      <div class="card">
-        <div class="card-head">
-          <span class="dot" id="allDot" style="color:#ff9d4d"></span>
-          <h2>All lanterns together</h2>
+    <!-- ALL STRIPS -->
+    <div class="card">
+      <div class="card-head">
+        <span class="dot" id="allDot" style="color:#ff9d4d"></span>
+        <h2>All strips together</h2>
+      </div>
+      <div class="wheel-card">
+        <div class="wheel" id="allWheelEl" role="slider" aria-label="Color for all strips" tabindex="0">
+          <div class="wheel-thumb"></div>
         </div>
-        <div class="control-row">
-          <input type="color" id="allColor" value="#ff9d4d">
-          <div class="slider-group">
-            <div class="slider-label"><span>Brightness</span><span class="val" id="allBrightVal">200</span></div>
-            <input type="range" id="allBright" min="0" max="255" value="200">
-          </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>Brightness</span><span class="val" id="allBrightVal">200</span></div>
+          <input type="range" id="allBright" min="0" max="255" value="200" aria-label="Brightness for all strips">
         </div>
-        <div class="slider-group" style="margin-top:16px;">
-          <div class="slider-label"><span>Warmth</span><span class="val" id="allWarmVal">0</span></div>
-          <input type="range" id="allWarm" min="-100" max="100" value="0">
-        </div>
-        <p class="hint">Warmth nudges the whole set cooler (left) or warmer (right) without losing your hue.</p>
       </div>
       <div class="btn-row">
         <button class="btn primary" id="allOn">All on</button>
@@ -308,276 +249,307 @@
       </div>
     </div>
 
-    <!-- EACH VIEW -->
-    <div class="view" id="view-each">
-      <div class="card" id="stripList"></div>
-      <div class="btn-row">
-        <button class="btn" id="mirror">Mirror left ↔ right</button>
-      </div>
-    </div>
+    <!-- EACH STRIP -->
+    <div class="card" id="stripList"></div>
 
   </div>
 
   <div class="unsupported" id="unsupportedNote" style="display:none;">
     Web Bluetooth isn't available in this browser.<br>
-    Open this page inside the <strong>Bluefy</strong> app on iPhone,<br>
-    or explore the live preview above.
+    Open this page inside the <strong>Bluefy</strong> app on iPhone to connect.
   </div>
 
 </div>
 
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
 <script>
   /* ============================================================
-     LANTERN LAYOUT
-     0 = center 17"; ring of 6: two 10", two 8", two 6"
+     STRIP LAYOUT — mirrors ble_neopixel_6strips.ino exactly:
+     6 NeoPixel strips on D0-D5, each with its own pixel count.
      ============================================================ */
-  const BULBS = [
-    { name:"Center",  size:17, r:40, hex:"#ff9d4d" },
-    { name:"10\" left",  size:10, r:24, hex:"#ff7a3c" },
-    { name:"10\" right", size:10, r:24, hex:"#ff5a4a" },
-    { name:"8\" left",   size:8,  r:19, hex:"#ff466a" },
-    { name:"8\" right",  size:8,  r:19, hex:"#e0468c" },
-    { name:"6\" left",   size:6,  r:15, hex:"#b83c9c" },
-    { name:"6\" right",  size:6,  r:15, hex:"#96148c" },
+  const STRIPS = [
+    { name:"Strip 0", pin:"D0", pixels:14, hex:"#ff9d4d" },
+    { name:"Strip 1", pin:"D1", pixels:15, hex:"#ff7a3c" },
+    { name:"Strip 2", pin:"D2", pixels:8,  hex:"#ff5a4a" },
+    { name:"Strip 3", pin:"D3", pixels:8,  hex:"#ff466a" },
+    { name:"Strip 4", pin:"D4", pixels:2,  hex:"#e0468c" },
+    { name:"Strip 5", pin:"D5", pixels:1,  hex:"#b83c9c" },
   ];
 
-  const RING = { cx:200, cy:120, rx:94, ry:24 };
-  // ring bulbs [1..6] = 10L,10R,8L,8R,6L,6R.
-  // Interleave sizes and push each same-size pair to opposite sides so
-  // identical lanterns are well separated (never adjacent, never same drop).
-  const RING_ANGLES = [155, 25, 205, 335, 235, 305];
-  // Per-lantern vertical drop below the ring (long drops so they hang low).
-  // Center drops lowest of all; same-size pairs also get slightly staggered drops.
-  const DROPS = [320, 140, 175, 210, 245, 285, 310]; // index 0 = center
-  const CENTER = { x:200, y: RING.cy + DROPS[0] };
-
-  /* ---- BLE UUIDs ---- */
+  /* ---- BLE UUIDs — must match ble_neopixel_6strips.ino exactly ---- */
   const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-  const CHAR_BULB = [
-    "beb5483e-36e1-4688-b7f5-ea07361b26a1","beb5483e-36e1-4688-b7f5-ea07361b26a2",
-    "beb5483e-36e1-4688-b7f5-ea07361b26a3","beb5483e-36e1-4688-b7f5-ea07361b26a4",
-    "beb5483e-36e1-4688-b7f5-ea07361b26a5","beb5483e-36e1-4688-b7f5-ea07361b26a6",
-    "beb5483e-36e1-4688-b7f5-ea07361b26a7",
+  const CHAR_STRIP = [
+    "beb5483e-36e1-4688-b7f5-ea07361b26a1", // strip0 (D0)
+    "beb5483e-36e1-4688-b7f5-ea07361b26a2", // strip1 (D1)
+    "beb5483e-36e1-4688-b7f5-ea07361b26a3", // strip2 (D2)
+    "beb5483e-36e1-4688-b7f5-ea07361b26a6", // strip3 (D3)
+    "beb5483e-36e1-4688-b7f5-ea07361b26a7", // strip4 (D4)
+    "beb5483e-36e1-4688-b7f5-ea07361b26a8", // strip5 (D5)
   ];
-  const CHAR_ALL="beb5483e-36e1-4688-b7f5-ea07361b26a8", CHAR_SCHEME="beb5483e-36e1-4688-b7f5-ea07361b26a9";
+  const CHAR_ALL = "beb5483e-36e1-4688-b7f5-ea07361b26a4";
+  const CHAR_SCHEME = "beb5483e-36e1-4688-b7f5-ea07361b26a5";
 
-  let device, server, service; const chars={}; let demoMode=false;
+  let device, server, service; const chars={};
   const statusDot=document.getElementById("statusDot");
   const connectBtn=document.getElementById("connectBtn");
   const connLabel=document.getElementById("connLabel");
-  const stageCap=document.getElementById("stageCap");
 
   if (!navigator.bluetooth) { document.getElementById("unsupportedNote").style.display="block"; }
 
   /* ============================================================
-     RENDER
+     Toasts
      ============================================================ */
-  const svgNS="http://www.w3.org/2000/svg";
-  const bulbsG=document.getElementById("bulbs"), wiresG=document.getElementById("wires");
-  const state=BULBS.map(b=>({hex:b.hex, bright:200}));
-
-  const positions=BULBS.map((b,i)=>{
-    if(i===0) return {x:CENTER.x, y:CENTER.y, anchorX:RING.cx, anchorY:RING.cy};
-    const ang=RING_ANGLES[i-1]*Math.PI/180;
-    const ax=RING.cx+Math.cos(ang)*RING.rx, ay=RING.cy+Math.sin(ang)*RING.ry;
-    return { x:ax, y:ay+DROPS[i]+b.r, anchorX:ax, anchorY:ay };
-  });
-  const drawOrder=BULBS.map((_,i)=>i).sort((a,b)=>positions[a].y-positions[b].y);
-
-  function el(tag,attrs){ const n=document.createElementNS(svgNS,tag); for(const k in attrs) n.setAttribute(k,attrs[k]); return n; }
-
-  drawOrder.forEach(i=>{
-    const b=BULBS[i], p=positions[i];
-    // hanging cord
-    wiresG.appendChild(el("line",{x1:p.anchorX,y1:p.anchorY,x2:p.x,y2:p.y-b.r-4}));
-    const g=el("g",{});
-    // outer soft glow
-    const glow=el("circle",{cx:p.x,cy:p.y,r:b.r*2.4,filter:"url(#bloom)",id:`glow-${i}`});
-    // paper body (its color, translucent)
-    const body=el("circle",{cx:p.x,cy:p.y,r:b.r,id:`body-${i}`});
-    // ribs: vertical arcs to read as a paper lantern
-    const ribs=el("g",{id:`ribs-${i}`,opacity:"0.22"});
-    for(let k=-2;k<=2;k++){
-      const rx=Math.abs(k)===2?b.r*0.42:Math.abs(k)===1?b.r*0.74:b.r*0.9;
-      ribs.appendChild(el("ellipse",{cx:p.x,cy:p.y,rx:Math.max(rx,1),ry:b.r,
-        fill:"none",stroke:"#000",'stroke-width':"0.8"}));
-    }
-    // horizontal seam
-    ribs.appendChild(el("line",{x1:p.x-b.r,y1:p.y,x2:p.x+b.r,y2:p.y,stroke:"#000",'stroke-width':"0.6"}));
-    // lit falloff + edge darkening
-    const lit=el("circle",{cx:p.x,cy:p.y,r:b.r,fill:"url(#paperLit)",id:`lit-${i}`});
-    const edge=el("circle",{cx:p.x,cy:p.y,r:b.r,fill:"url(#paperEdge)"});
-    // top & bottom caps (paper lantern fittings)
-    const capT=el("rect",{x:p.x-b.r*0.22,y:p.y-b.r-3,width:b.r*0.44,height:5,rx:1.5,fill:"#2a2620"});
-    const capB=el("rect",{x:p.x-b.r*0.16,y:p.y+b.r-2,width:b.r*0.32,height:4,rx:1.5,fill:"#2a2620"});
-    g.append(glow,body,ribs,lit,edge,capT,capB);
-    bulbsG.appendChild(g);
-  });
-
-  function hexToRgb(hex){const c=hex.replace("#","");return [parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];}
-  function mul(hex,m){const [r,g,b]=hexToRgb(hex);return `rgb(${Math.round(r*m)},${Math.round(g*m)},${Math.round(b*m)})`;}
-
-  let flickerOn=false;
-  function renderBulb(i,flick=1){
-    const {hex,bright}=state[i];
-    const f=(bright/255)*flick;
-    const body=document.getElementById(`body-${i}`);
-    const lit=document.getElementById(`lit-${i}`);
-    const glow=document.getElementById(`glow-${i}`);
-    // paper body: dark when off, saturated warm color when lit
-    body.setAttribute("fill", mul(hex, 0.30+f*0.55));
-    lit.setAttribute("opacity", (0.25+f*0.75).toFixed(2));
-    glow.setAttribute("fill", hex);
-    glow.setAttribute("opacity", (0.05+f*0.5).toFixed(2));
+  const toastsEl=document.getElementById("toasts");
+  function toast(msg, kind="info"){
+    const t=document.createElement("div"); t.className=`toast ${kind==="error"?"error":kind==="ok"?"ok":""}`;
+    t.innerHTML=`<span class="toast-dot"></span><span>${msg}</span>`;
+    toastsEl.appendChild(t);
+    setTimeout(()=>{ t.classList.add("leaving"); setTimeout(()=>t.remove(),200); },3200);
   }
-  function renderAll(){ BULBS.forEach((_,i)=>renderBulb(i)); }
-
-  /* ---- flicker loop ---- */
-  function flickerTick(){
-    if(flickerOn){
-      BULBS.forEach((_,i)=>{ const j=0.86+Math.random()*0.14; renderBulb(i,j); });
-    }
-    requestAnimationFrame(()=>setTimeout(flickerTick,90));
-  }
-  flickerTick();
 
   /* ============================================================
-     BLE
+     Local persistence (UI convenience only — device state is
+     whatever was last written over Bluetooth)
      ============================================================ */
-  async function writeChar(char,str){ if(demoMode||!char) return; try{ await char.writeValue(new TextEncoder().encode(str)); }catch(e){ console.error(e); } }
-  async function pushBulb(i){ const [r,g,b]=hexToRgb(state[i].hex); await writeChar(chars.bulb?.[i], `${r},${g},${b},${state[i].bright}`); }
+  const STORE_KEY="neopixel-ui-state-v2";
+  function saveLocal(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({ state })); }catch(e){ /* storage unavailable — ignore */ }
+  }
+  function loadLocal(){
+    try{ const raw=localStorage.getItem(STORE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+  }
+
+  const state=STRIPS.map(s=>({hex:s.hex, bright:200}));
+
+  function hexToRgb(hex){const c=hex.replace("#","");return [parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];}
+
+  /* ============================================================
+     Color wheel (hue = angle, saturation = radius, value fixed at
+     1 — brightness is a separate physical slider elsewhere)
+     ============================================================ */
+  function hsvToHex(h,s,v){
+    h=((h%360)+360)%360; s=Math.min(1,Math.max(0,s)); v=Math.min(1,Math.max(0,v));
+    const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+    let r,g,b;
+    if(h<60)[r,g,b]=[c,x,0]; else if(h<120)[r,g,b]=[x,c,0]; else if(h<180)[r,g,b]=[0,c,x];
+    else if(h<240)[r,g,b]=[0,x,c]; else if(h<300)[r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+    const R=Math.round((r+m)*255), G=Math.round((g+m)*255), B=Math.round((b+m)*255);
+    return `#${[R,G,B].map(v=>v.toString(16).padStart(2,"0")).join("")}`;
+  }
+  function hexToHsv(hex){
+    const [r,g,b]=hexToRgb(hex).map(v=>v/255);
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0;
+    if(d!==0){
+      if(max===r) h=60*(((g-b)/d)%6);
+      else if(max===g) h=60*((b-r)/d+2);
+      else h=60*((r-g)/d+4);
+    }
+    if(h<0) h+=360;
+    return { h, s: max===0?0:d/max, v: max };
+  }
+  function createWheel(el, size, onChange){
+    const thumb=el.querySelector(".wheel-thumb");
+    function place(h,s){
+      const R=size/2;
+      const ang=h*Math.PI/180, dist=s*R;
+      thumb.style.left=`${R+Math.cos(ang)*dist}px`;
+      thumb.style.top=`${R+Math.sin(ang)*dist}px`;
+    }
+    function fromPointer(clientX,clientY){
+      const rect=el.getBoundingClientRect(), R=rect.width/2;
+      const dx=clientX-(rect.left+R), dy=clientY-(rect.top+R);
+      const dist=Math.min(Math.hypot(dx,dy),R);
+      const h=(Math.atan2(dy,dx)*180/Math.PI+360)%360;
+      const s=R===0?0:dist/R;
+      place(h,s);
+      onChange(hsvToHex(h,s,1),h,s);
+    }
+    let dragging=false;
+    el.addEventListener("pointerdown",e=>{ dragging=true; el.setPointerCapture(e.pointerId); fromPointer(e.clientX,e.clientY); e.preventDefault(); });
+    el.addEventListener("pointermove",e=>{ if(dragging) fromPointer(e.clientX,e.clientY); });
+    el.addEventListener("pointerup",()=>{ dragging=false; });
+    el.addEventListener("pointercancel",()=>{ dragging=false; });
+    return { setColor(hex){ const {h,s}=hexToHsv(hex); place(h,s); } };
+  }
+
+  /* ============================================================
+     BLE writes
+     ============================================================ */
+  async function writeChar(char,str){ if(!char) return; try{ await char.writeValue(new TextEncoder().encode(str)); }catch(e){ console.error(e); toast("Write failed — check the connection.","error"); } }
+  async function pushStrip(i){ const [r,g,b]=hexToRgb(state[i].hex); await writeChar(chars.strip?.[i], `${r},${g},${b},${state[i].bright}`); }
   async function pushAll(hex,bright){ const [r,g,b]=hexToRgb(hex); await writeChar(chars.all, `${r},${g},${b},${bright}`); }
   async function pushScheme(name){ await writeChar(chars.scheme,name); }
 
   /* ============================================================
-     Tabs
+     All strips together
      ============================================================ */
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.addEventListener("click",()=>{
-      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-      document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-      t.classList.add("active");
-      document.getElementById("view-"+t.dataset.view).classList.add("active");
-    });
-  });
-
-  /* ============================================================
-     Master
-     ============================================================ */
-  const allColor=document.getElementById("allColor"), allBright=document.getElementById("allBright");
+  const allBright=document.getElementById("allBright");
   const allBrightVal=document.getElementById("allBrightVal"), allDot=document.getElementById("allDot");
-  const allWarm=document.getElementById("allWarm"), allWarmVal=document.getElementById("allWarmVal");
+  let allHex="#ff9d4d";
 
-  function warmShift(hex,amt){ // amt -100..100 -> shift R/B channels
-    let [r,g,b]=hexToRgb(hex); const t=amt/100;
-    r=Math.min(255,Math.max(0,r+t*40)); b=Math.min(255,Math.max(0,b-t*40));
-    return `#${[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("")}`;
-  }
   function applyMaster(){
-    const base=allColor.value, bright=+allBright.value;
-    const hex=warmShift(base, +allWarm.value);
-    allDot.style.color=hex;
-    BULBS.forEach((_,i)=>{ state[i].hex=hex; state[i].bright=bright; renderBulb(i); syncRow(i); });
-    pushAll(hex,bright);
+    const bright=+allBright.value;
+    allDot.style.color=allHex;
+    STRIPS.forEach((_,i)=>{ state[i].hex=allHex; state[i].bright=bright; syncRow(i); });
+    pushAll(allHex,bright);
     clearSceneActive();
+    saveLocal();
   }
-  allColor.addEventListener("input",applyMaster);
+  const allWheel=createWheel(document.getElementById("allWheelEl"),188,hex=>{ allHex=hex; applyMaster(); });
+  allWheel.setColor(allHex);
   allBright.addEventListener("input",()=>{allBrightVal.textContent=allBright.value; applyMaster();});
-  allWarm.addEventListener("input",()=>{allWarmVal.textContent=allWarm.value; applyMaster();});
   document.getElementById("allOn").addEventListener("click",()=>{ allBright.value=230; allBrightVal.textContent="230"; applyMaster(); });
   document.getElementById("allOff").addEventListener("click",()=>{ allBright.value=0; allBrightVal.textContent="0"; applyMaster(); });
 
   /* ============================================================
-     Per-lantern rows
+     Per-strip rows
      ============================================================ */
   const stripList=document.getElementById("stripList");
+  const lastOnBright=STRIPS.map(()=>200); // remembers brightness to restore when a strip is switched back on
   function syncRow(i){
-    const c=document.getElementById(`b${i}Color`), s=document.getElementById(`b${i}Bright`), v=document.getElementById(`b${i}Val`);
-    if(c) c.value=state[i].hex; if(s) s.value=state[i].bright; if(v) v.textContent=state[i].bright;
+    const sw2=document.getElementById(`s${i}Swatch`), s=document.getElementById(`s${i}Bright`), v=document.getElementById(`s${i}Val`);
+    const sw=document.getElementById(`s${i}Switch`), item=document.getElementById(`s${i}Item`);
+    if(sw2) sw2.style.background=state[i].hex; if(s) s.value=state[i].bright; if(v) v.textContent=state[i].bright;
+    const on=state[i].bright>0;
+    if(sw){ sw.classList.toggle("on",on); sw.setAttribute("aria-checked",on?"true":"false"); }
+    if(item) item.classList.toggle("is-off",!on);
+    if(on) lastOnBright[i]=state[i].bright;
   }
-  BULBS.forEach((b,i)=>{
-    const row=document.createElement("div"); row.className="lantern-row";
-    row.innerHTML=`
-      <input type="color" id="b${i}Color" value="${b.hex}">
-      <div class="lantern-meta">
-        <div class="lantern-name">${b.name}</div>
-        <div class="lantern-sub">${b.size}" · D${i}</div>
+  STRIPS.forEach((s,i)=>{
+    const item=document.createElement("div"); item.className="strip-item"; item.id=`s${i}Item`;
+    item.innerHTML=`
+      <div class="strip-row">
+        <button type="button" class="swatch" id="s${i}Swatch" style="background:${s.hex}" aria-label="${s.name} color, tap to edit"></button>
+        <div class="strip-meta">
+          <div class="strip-name">${s.name}</div>
+          <div class="strip-sub">${s.pin} · ${s.pixels} px</div>
+        </div>
+        <div class="switch mini-switch on" id="s${i}Switch" role="switch" aria-checked="true" aria-label="${s.name} power" tabindex="0"></div>
       </div>
-      <input type="range" class="mini-slider" id="b${i}Bright" min="0" max="255" value="200">
-      <span class="mini-val" id="b${i}Val">200</span>`;
-    stripList.appendChild(row);
-    row.querySelector(`#b${i}Color`).addEventListener("input",e=>{ state[i].hex=e.target.value; renderBulb(i); pushBulb(i); clearSceneActive(); });
-    row.querySelector(`#b${i}Bright`).addEventListener("input",e=>{ state[i].bright=+e.target.value; document.getElementById(`b${i}Val`).textContent=e.target.value; renderBulb(i); pushBulb(i); clearSceneActive(); });
+      <div class="strip-slider-row">
+        <input type="range" class="mini-slider" id="s${i}Bright" min="0" max="255" value="200" aria-label="${s.name} brightness">
+        <span class="mini-val" id="s${i}Val">200</span>
+      </div>
+      <div class="wheel-slot" id="s${i}WheelSlot"></div>`;
+    stripList.appendChild(item);
+    item.querySelector(`#s${i}Swatch`).addEventListener("click",()=>expandRow(i));
+    item.querySelector(`#s${i}Bright`).addEventListener("input",e=>{
+      state[i].bright=+e.target.value; document.getElementById(`s${i}Val`).textContent=e.target.value;
+      syncRow(i); pushStrip(i); clearSceneActive(); saveLocal();
+    });
+    const sw=item.querySelector(`#s${i}Switch`);
+    function toggleStrip(){
+      const turningOn=state[i].bright===0;
+      state[i].bright= turningOn ? (lastOnBright[i]||200) : 0;
+      syncRow(i); pushStrip(i); clearSceneActive(); saveLocal();
+    }
+    sw.addEventListener("click",toggleStrip);
+    sw.addEventListener("keydown",e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggleStrip(); } });
   });
 
-  // mirror left <-> right (pairs 1/2, 3/4, 5/6)
-  document.getElementById("mirror").addEventListener("click",()=>{
-    [[1,2],[3,4],[5,6]].forEach(([l,r])=>{ state[r].hex=state[l].hex; state[r].bright=state[l].bright; renderBulb(r); syncRow(r); pushBulb(r); });
+  // shared color wheel, moved into whichever strip row is expanded
+  let expandedIndex=null;
+  const eachWheelEl=document.createElement("div");
+  eachWheelEl.className="wheel wheel-sm"; eachWheelEl.id="eachWheelEl";
+  eachWheelEl.setAttribute("role","slider"); eachWheelEl.tabIndex=0;
+  eachWheelEl.innerHTML=`<div class="wheel-thumb"></div>`;
+  const eachWheel=createWheel(eachWheelEl,132,hex=>{
+    if(expandedIndex==null) return;
+    const i=expandedIndex;
+    state[i].hex=hex;
+    document.getElementById(`s${i}Swatch`).style.background=hex;
+    pushStrip(i); clearSceneActive(); saveLocal();
   });
+  function collapseExpanded(){
+    if(expandedIndex==null) return;
+    document.getElementById(`s${expandedIndex}Item`)?.classList.remove("expanded");
+    document.getElementById(`s${expandedIndex}WheelSlot`)?.classList.remove("open");
+    expandedIndex=null;
+  }
+  function expandRow(i){
+    if(expandedIndex===i){ collapseExpanded(); return; }
+    collapseExpanded();
+    const slot=document.getElementById(`s${i}WheelSlot`);
+    slot.appendChild(eachWheelEl);
+    slot.classList.add("open");
+    document.getElementById(`s${i}Item`).classList.add("expanded");
+    expandedIndex=i;
+    eachWheelEl.setAttribute("aria-label",`${STRIPS[i].name} color`);
+    eachWheel.setColor(state[i].hex);
+  }
 
   /* ============================================================
-     Scenes
+     Scenes — names and colors match ble_neopixel_6strips.ino's
+     SchemeCallback exactly (device computes these on its own; we
+     mirror them here only so the UI reflects what happens).
      ============================================================ */
   const SCENES={
-    sunset:["#ffb347","#ff8a3c","#ff6a3c","#ff4a5a","#e83c78","#b83c9c","#96148c"],
-    candle:["#ffd9a0","#ffc078","#ffa85c","#ff924a","#f07a3c","#d8602e","#c04a24"],
-    warm:  ["#fff0d4","#ffe6bd","#ffdba6","#ffd090","#ffc478","#ffb860","#ffab4c"],
-    ocean: ["#7fe8ff","#38c8ff","#12a0ff","#0a78e0","#0a50b4","#123c9c","#0a2a78"],
-    ice:   ["#eaffff","#cdf3ff","#a8e2ff","#86ccff","#6fb0f0","#5a90e0","#4a72cf"],
-    forest:["#d4f08a","#9fd83c","#5fbf3c","#2ea04a","#1a8a4a","#0a6a3c","#0a4a2c"],
-    berry: ["#ffc0d8","#ff8fb4","#f0609c","#e0468c","#b83c9c","#8a2a8c","#5a1a6c"],
-    off:   Array(7).fill("#141210"),
+    sunset: ["#ff5e00","#ff8214","#ff3d46","#d61e46","#961464","#461478"],
+    ocean:  ["#0096ff","#00b4e6","#00c8c8","#0096a0","#0064be","#0050b4"],
+    forest: ["#1e9628","#46a014","#78a014","#14783c","#0a5a32","#284614"],
+    off:    Array(6).fill("#000000"),
   };
-  let customScene=null;
 
   function applyScene(name){
-    let pal = name==="custom" ? (customScene||SCENES.warm) : SCENES[name];
+    const pal=SCENES[name];
     if(!pal) return;
-    const off = name==="off";
-    BULBS.forEach((_,i)=>{
-      state[i].hex=pal[i];
-      state[i].bright= off?0 : (name==="custom"&&customScene?customScene.b[i]:215);
-      renderBulb(i); syncRow(i); pushBulb(i);
-    });
-    pushScheme(name);
+    const bright = name==="off" ? 0 : 200;
+    STRIPS.forEach((_,i)=>{ state[i].hex=pal[i]; state[i].bright=bright; syncRow(i); });
+    pushScheme(name); // device applies the preset itself — no per-strip writes needed
     document.querySelectorAll(".scheme-btn").forEach(x=>x.classList.remove("active"));
     document.querySelector(`.scheme-btn[data-scheme="${name}"]`)?.classList.add("active");
+    saveLocal();
   }
   function clearSceneActive(){ document.querySelectorAll(".scheme-btn").forEach(x=>x.classList.remove("active")); }
   document.querySelectorAll(".scheme-btn").forEach(btn=>btn.addEventListener("click",()=>applyScene(btn.dataset.scheme)));
 
-  // save current as custom
-  document.getElementById("saveScene").addEventListener("click",()=>{
-    customScene = { 0:0, hex:state.map(s=>s.hex), b:state.map(s=>s.bright) };
-    customScene = state.map(s=>s.hex); customScene.b = state.map(s=>s.bright);
-    const btn=document.getElementById("saveScene"); btn.textContent="Saved ✓ — tap “My scene” to recall";
-    setTimeout(()=>btn.textContent="Save current as “My scene”",2200);
-  });
-
-  // flicker toggle
-  const flickerSwitch=document.getElementById("flickerSwitch");
-  flickerSwitch.addEventListener("click",()=>{ flickerOn=!flickerOn; flickerSwitch.classList.toggle("on",flickerOn); if(!flickerOn) renderAll(); });
-
   /* ============================================================
-     Connect / demo
+     Connect / disconnect
      ============================================================ */
+  function isConnected(){ return !!(device && device.gatt && device.gatt.connected); }
+
   connectBtn.addEventListener("click", async ()=>{
-    if(!navigator.bluetooth){ // fall into preview
-      demoMode=true; statusDot.classList.add("connected"); connLabel.textContent="Preview"; stageCap.textContent="Preview mode · colors not sent"; return;
-    }
+    if(isConnected()){ device.gatt.disconnect(); return; } // triggers onDisconnected via event
+    if(!navigator.bluetooth){ toast("Web Bluetooth isn't available in this browser.","error"); return; }
+
+    connectBtn.disabled=true; statusDot.classList.add("connecting"); connLabel.textContent="Connecting…";
     try{
       device=await navigator.bluetooth.requestDevice({filters:[{services:[SERVICE_UUID]}]});
       server=await device.gatt.connect(); service=await server.getPrimaryService(SERVICE_UUID);
-      chars.bulb=[]; for(let i=0;i<7;i++) chars.bulb[i]=await service.getCharacteristic(CHAR_BULB[i]);
+      chars.strip=[]; for(let i=0;i<STRIPS.length;i++) chars.strip[i]=await service.getCharacteristic(CHAR_STRIP[i]);
       chars.all=await service.getCharacteristic(CHAR_ALL); chars.scheme=await service.getCharacteristic(CHAR_SCHEME);
-      demoMode=false; statusDot.classList.add("connected");
-      connLabel.textContent=device.name?device.name:"Connected"; stageCap.textContent="Connected · live";
+      statusDot.classList.remove("connecting"); statusDot.classList.add("connected");
+      connLabel.textContent=device.name?device.name:"Connected";
+      connectBtn.setAttribute("aria-label","Disconnect from chandelier");
       device.addEventListener("gattserverdisconnected",onDisconnected);
-    }catch(err){ console.error(err); alert("Connection failed or cancelled: "+err.message); }
+      toast(`Connected to ${device.name||"chandelier"}`, "ok");
+    }catch(err){
+      console.error(err);
+      statusDot.classList.remove("connecting");
+      connLabel.textContent="Connect";
+      const cancelled = err.name==="NotFoundError";
+      toast(cancelled ? "No device selected" : `Connection failed: ${err.message}`, cancelled?"info":"error");
+    }finally{
+      connectBtn.disabled=false;
+    }
   });
-  function onDisconnected(){ statusDot.classList.remove("connected"); connLabel.textContent="Connect"; stageCap.textContent="Live preview"; }
+  function onDisconnected(){
+    statusDot.classList.remove("connected","connecting"); connLabel.textContent="Connect";
+    connectBtn.setAttribute("aria-label","Connect to chandelier via Bluetooth");
+  }
 
-  renderAll();
+  /* ---- restore last session's colors/brightness (local UI only) ---- */
+  (function restoreLocal(){
+    const saved=loadLocal();
+    if(!saved) return;
+    if(Array.isArray(saved.state) && saved.state.length===STRIPS.length){
+      saved.state.forEach((s,i)=>{ if(s && typeof s.hex==="string" && typeof s.bright==="number") state[i]=s; });
+    }
+    STRIPS.forEach((_,i)=>syncRow(i));
+    allHex=state[0].hex; allWheel.setColor(allHex); allDot.style.color=allHex;
+  })();
 </script>
 </body>
 </html>
