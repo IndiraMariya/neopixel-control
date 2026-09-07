@@ -1,6 +1,9 @@
 // BLE protocol constants — these must match ble_neopixel_6strips.ino exactly.
-// The firmware exposes 6 NeoPixel strips (D0-D5), a characteristic that sets
-// all 6 at once, and a characteristic that applies a named scheme preset.
+// The firmware exposes 6 NeoPixel strips, a characteristic that sets all 6 at
+// once, and a characteristic that applies a named scheme preset. Pin/pixel
+// values below are cosmetic labels only (index-to-characteristic mapping is
+// what actually matters for the protocol) but should still match PIN_STRIP_*
+// / NUM_PIXELS_* in the firmware.
 
 export interface StripInfo {
   name: string;
@@ -11,11 +14,11 @@ export interface StripInfo {
 
 export const STRIPS: StripInfo[] = [
   { name: "Strip 0", pin: "D0", pixels: 14, defaultHex: "#ff9d4d" },
-  { name: "Strip 1", pin: "D1", pixels: 15, defaultHex: "#ff7a3c" },
+  { name: "Strip 1", pin: "D1", pixels: 17, defaultHex: "#ff7a3c" },
   { name: "Strip 2", pin: "D2", pixels: 8, defaultHex: "#ff5a4a" },
-  { name: "Strip 3", pin: "D3", pixels: 8, defaultHex: "#ff466a" },
-  { name: "Strip 4", pin: "D4", pixels: 2, defaultHex: "#e0468c" },
-  { name: "Strip 5", pin: "D5", pixels: 1, defaultHex: "#b83c9c" },
+  { name: "Strip 3", pin: "D4", pixels: 8, defaultHex: "#ff466a" },
+  { name: "Strip 4", pin: "D5", pixels: 1, defaultHex: "#e0468c" },
+  { name: "Strip 5", pin: "D6", pixels: 2, defaultHex: "#b83c9c" },
 ];
 
 export const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
